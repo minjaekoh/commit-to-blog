@@ -9,6 +9,8 @@ type CommitItem = { sha: string; shortSha: string; message: string; authorName: 
 type DiffFile = { filename: string; status: string; additions: number; deletions: number; changes: number; patch: string };
 type InterviewMode = 'answer' | 'explain' | 'skip';
 
+type PostCard = { id: string; title: string; repoFullName: string; commitSha: string; status: 'draft' | 'published'; updatedAt: string; contentMarkdown: string };
+
 type StartInterviewResponse = {
   sessionId: string;
   question: string;
@@ -131,6 +133,9 @@ function App() {
   const [interviewLoading, setInterviewLoading] = React.useState(false);
 
   const [draftMarkdown, setDraftMarkdown] = React.useState('');
+  const [posts, setPosts] = React.useState<PostCard[]>([]);
+  const [postTitle, setPostTitle] = React.useState('');
+  const [saveMessage, setSaveMessage] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     void (async () => {
@@ -207,7 +212,27 @@ function App() {
       helperText,
     });
     setDraftMarkdown(markdown);
+    setPostTitle(`TIL: ${selectedRepo} ${selectedCommit.slice(0, 7)} 회고`);
     setStep('draft');
+  };
+
+  const saveDraft = async () => {
+    const payload = {
+      sessionId,
+      repoFullName: selectedRepo,
+      commitSha: selectedCommit,
+      title: postTitle || `TIL: ${selectedRepo} ${selectedCommit.slice(0, 7)} 회고`,
+      contentMarkdown: draftMarkdown,
+      status: 'draft' as const,
+      tags: [],
+    };
+    const data = await apiPost<{ id: string; status: string }>('/posts', payload);
+    setSaveMessage(`Saved draft: ${data.id}`);
+  };
+
+  const loadPosts = async () => {
+    const data = await apiGet<PostCard[]>('/posts');
+    setPosts(data);
   };
 
   return (
@@ -268,6 +293,7 @@ function App() {
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <div>
                 <h3 className="mb-2 font-medium">Markdown Editor</h3>
+                <input className="mb-2 w-full rounded-md border px-3 py-2" value={postTitle} onChange={(e) => setPostTitle(e.target.value)} placeholder="Post title" />
                 <textarea className="h-[480px] w-full rounded-md border bg-white p-3 font-mono text-sm" value={draftMarkdown} onChange={(e) => setDraftMarkdown(e.target.value)} />
               </div>
               <div>
@@ -275,7 +301,31 @@ function App() {
                 <div className="h-[480px] overflow-auto rounded-md border bg-white p-4 text-sm" dangerouslySetInnerHTML={{ __html: markdownToPreview(draftMarkdown) }} />
               </div>
             </div>
-            <button className="mt-4 text-sm underline" onClick={() => setStep('interview')}>Back to Interview</button>
+            <div className="mt-4 flex gap-2">
+              <button className="rounded-md bg-primary px-4 py-2 text-primary-foreground" onClick={saveDraft}>Save Draft</button>
+              <button className="rounded-md border px-4 py-2" onClick={loadPosts}>Load Saved Posts</button>
+              <button className="text-sm underline" onClick={() => setStep('interview')}>Back to Interview</button>
+            </div>
+            {saveMessage ? <p className="mt-2 text-sm text-muted-foreground">{saveMessage}</p> : null}
+            {posts.length > 0 ? (
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                {posts.map((post) => (
+                  <article key={post.id} className="rounded-md border p-3">
+                    <p className="font-medium">{post.title}</p>
+                    <p className="text-xs text-muted-foreground">{post.repoFullName} / {post.commitSha.slice(0, 7)}</p>
+                    <button
+                      className="mt-2 rounded-md border px-3 py-1 text-sm"
+                      onClick={() => {
+                        setPostTitle(post.title);
+                        setDraftMarkdown(post.contentMarkdown);
+                      }}
+                    >
+                      Edit
+                    </button>
+                  </article>
+                ))}
+              </div>
+            ) : null}
           </section>
         ) : null}
       </div>
@@ -288,3 +338,4 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <App />
   </React.StrictMode>,
 );
+
