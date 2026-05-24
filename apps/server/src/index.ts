@@ -5,6 +5,7 @@ import { connectDatabase } from './config/db';
 import { commitsRouter } from './routes/commits';
 import { diffRouter } from './routes/diff';
 import { healthRouter } from './routes/health';
+import { analyzeRouter } from './routes/analyze';
 import { interviewRouter } from './routes/interview';
 import { postsRouter } from './routes/posts';
 import { reposRouter } from './routes/repos';
@@ -27,6 +28,7 @@ app.use('/api/health', healthRouter);
 app.use('/api/repos', reposRouter);
 app.use('/api/commits', commitsRouter);
 app.use('/api/diff', diffRouter);
+app.use('/api/analyze', analyzeRouter);
 app.use('/api/interview', interviewRouter);
 app.use('/api/posts', postsRouter);
 

@@ -100,3 +100,23 @@ postsRouter.get('/:postId', async (req, res) => {
     return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error instanceof Error ? error.message : 'Unexpected error' } });
   }
 });
+
+postsRouter.delete('/:postId', async (req, res) => {
+  try {
+    const { postId } = req.params;
+    if (!Types.ObjectId.isValid(postId)) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_POST_ID', message: 'Invalid postId.' } });
+    }
+
+    const user = await getOrCreateDefaultUser();
+    const deleted = await PostModel.findOneAndDelete({ _id: postId, userId: user._id });
+
+    if (!deleted) {
+      return res.status(404).json({ success: false, error: { code: 'POST_NOT_FOUND', message: 'Post not found.' } });
+    }
+
+    return res.json({ success: true, data: { id: postId, deleted: true } });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error instanceof Error ? error.message : 'Unexpected error' } });
+  }
+});
