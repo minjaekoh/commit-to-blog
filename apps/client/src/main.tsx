@@ -1,83 +1,231 @@
-ï»¿import React from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom/client';
 
 import './styles/globals.css';
 
 type Step = 'select' | 'interview';
 
+type RepoItem = {
+  id: number;
+  fullName: string;
+  private: boolean;
+  defaultBranch: string;
+};
+
+type CommitItem = {
+  sha: string;
+  shortSha: string;
+  message: string;
+  authorName: string;
+  committedAt: string;
+  url: string;
+};
+
+type DiffFile = {
+  filename: string;
+  status: string;
+  additions: number;
+  deletions: number;
+  changes: number;
+  patch: string;
+};
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000/api';
+
+async function apiGet<T>(path: string): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`);
+  const payload = await response.json();
+
+  if (!response.ok || !payload.success) {
+    throw new Error(payload?.error?.message ?? 'Request failed');
+  }
+
+  return payload.data as T;
+}
+
 function App() {
   const [step, setStep] = React.useState<Step>('select');
-  const [selectedRepo, setSelectedRepo] = React.useState('minja/smart-blog');
-  const [selectedCommit, setSelectedCommit] = React.useState('a1b2c3d');
+  const [repos, setRepos] = React.useState<RepoItem[]>([]);
+  const [reposLoading, setReposLoading] = React.useState(true);
+  const [reposError, setReposError] = React.useState<string | null>(null);
+
+  const [selectedRepo, setSelectedRepo] = React.useState('');
+  const [commits, setCommits] = React.useState<CommitItem[]>([]);
+  const [commitsLoading, setCommitsLoading] = React.useState(false);
+  const [commitsError, setCommitsError] = React.useState<string | null>(null);
+
+  const [selectedCommit, setSelectedCommit] = React.useState('');
+  const [diffFiles, setDiffFiles] = React.useState<DiffFile[]>([]);
+  const [diffLoading, setDiffLoading] = React.useState(false);
+  const [diffError, setDiffError] = React.useState<string | null>(null);
+
   const [answer, setAnswer] = React.useState('');
+
+  React.useEffect(() => {
+    const loadRepos = async () => {
+      setReposLoading(true);
+      setReposError(null);
+      try {
+        const data = await apiGet<RepoItem[]>('/repos');
+        setRepos(data);
+        setSelectedRepo(data[0]?.fullName ?? '');
+      } catch (error) {
+        setReposError(error instanceof Error ? error.message : 'ÀúÀå¼Ò Á¶È¸ ½ÇÆĞ');
+      } finally {
+        setReposLoading(false);
+      }
+    };
+
+    void loadRepos();
+  }, []);
+
+  React.useEffect(() => {
+    if (!selectedRepo) {
+      setCommits([]);
+      setSelectedCommit('');
+      return;
+    }
+
+    const loadCommits = async () => {
+      setCommitsLoading(true);
+      setCommitsError(null);
+      try {
+        const data = await apiGet<CommitItem[]>(`/commits?repo=${encodeURIComponent(selectedRepo)}`);
+        setCommits(data);
+        setSelectedCommit(data[0]?.sha ?? '');
+      } catch (error) {
+        setCommitsError(error instanceof Error ? error.message : 'Ä¿¹Ô Á¶È¸ ½ÇÆĞ');
+      } finally {
+        setCommitsLoading(false);
+      }
+    };
+
+    void loadCommits();
+  }, [selectedRepo]);
+
+  React.useEffect(() => {
+    if (!selectedRepo || !selectedCommit) {
+      setDiffFiles([]);
+      return;
+    }
+
+    const loadDiff = async () => {
+      setDiffLoading(true);
+      setDiffError(null);
+      try {
+        const data = await apiGet<{ files: DiffFile[] }>(
+          `/diff?repo=${encodeURIComponent(selectedRepo)}&sha=${encodeURIComponent(selectedCommit)}`,
+        );
+        setDiffFiles(data.files);
+      } catch (error) {
+        setDiffError(error instanceof Error ? error.message : 'Diff Á¶È¸ ½ÇÆĞ');
+      } finally {
+        setDiffLoading(false);
+      }
+    };
+
+    void loadDiff();
+  }, [selectedRepo, selectedCommit]);
 
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-5xl p-8">
         <h1 className="text-3xl font-bold">Smart Blog - AI Tutor</h1>
-        <p className="mt-2 text-muted-foreground">Commit ì„ íƒ -> AI ì¸í„°ë·° ëª©ì—… ì—°ê²°</p>
+        <p className="mt-2 text-muted-foreground">Commit ¼±ÅÃ - AI ÀÎÅÍºä ÁøÀÔ</p>
 
         {step === 'select' ? (
           <section className="mt-8 rounded-xl border p-6">
-            <h2 className="text-xl font-semibold">1. ì €ì¥ì†Œ/ì»¤ë°‹ ì„ íƒ</h2>
+            <h2 className="text-xl font-semibold">1. ÀúÀå¼Ò/Ä¿¹Ô ¼±ÅÃ</h2>
+
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <label className="block">
                 <span className="mb-2 block text-sm font-medium">Repository</span>
                 <select
                   className="w-full rounded-md border bg-white px-3 py-2"
                   value={selectedRepo}
+                  disabled={reposLoading || repos.length === 0}
                   onChange={(e) => setSelectedRepo(e.target.value)}
                 >
-                  <option value="minja/smart-blog">minja/smart-blog</option>
-                  <option value="minja/commit-to-blog">minja/commit-to-blog</option>
+                  {repos.map((repo) => (
+                    <option key={repo.id} value={repo.fullName}>
+                      {repo.fullName}
+                    </option>
+                  ))}
                 </select>
               </label>
+
               <label className="block">
                 <span className="mb-2 block text-sm font-medium">Commit</span>
                 <select
                   className="w-full rounded-md border bg-white px-3 py-2"
                   value={selectedCommit}
+                  disabled={commitsLoading || commits.length === 0}
                   onChange={(e) => setSelectedCommit(e.target.value)}
                 >
-                  <option value="a1b2c3d">a1b2c3d - feat: interview route scaffold</option>
-                  <option value="d4e5f6g">d4e5f6g - chore: ts config setup</option>
+                  {commits.map((commit) => (
+                    <option key={commit.sha} value={commit.sha}>
+                      {commit.shortSha} - {commit.message}
+                    </option>
+                  ))}
                 </select>
               </label>
             </div>
+
+            {reposLoading ? <p className="mt-3 text-sm">ÀúÀå¼Ò ·Îµù Áß...</p> : null}
+            {reposError ? <p className="mt-3 text-sm text-red-600">ÀúÀå¼Ò ¿À·ù: {reposError}</p> : null}
+            {!reposLoading && !reposError && repos.length === 0 ? <p className="mt-3 text-sm">ÀúÀå¼Ò°¡ ¾ø½À´Ï´Ù.</p> : null}
+
+            {commitsLoading ? <p className="mt-3 text-sm">Ä¿¹Ô ·Îµù Áß...</p> : null}
+            {commitsError ? <p className="mt-3 text-sm text-red-600">Ä¿¹Ô ¿À·ù: {commitsError}</p> : null}
+            {!commitsLoading && !commitsError && selectedRepo && commits.length === 0 ? (
+              <p className="mt-3 text-sm">¼±ÅÃÇÑ ÀúÀå¼Ò¿¡ Ä¿¹ÔÀÌ ¾ø½À´Ï´Ù.</p>
+            ) : null}
+
+            {diffLoading ? <p className="mt-3 text-sm">Diff ·Îµù Áß...</p> : null}
+            {diffError ? <p className="mt-3 text-sm text-red-600">Diff ¿À·ù: {diffError}</p> : null}
+            {!diffLoading && !diffError && selectedCommit && diffFiles.length === 0 ? (
+              <p className="mt-3 text-sm">Diff ÆÄÀÏÀÌ ¾ø½À´Ï´Ù.</p>
+            ) : null}
+
+            {!diffLoading && diffFiles.length > 0 ? (
+              <p className="mt-3 text-sm text-muted-foreground">º¯°æ ÆÄÀÏ {diffFiles.length}°³</p>
+            ) : null}
+
             <button
-              className="mt-6 rounded-md bg-primary px-4 py-2 text-primary-foreground"
+              className="mt-6 rounded-md bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50"
+              disabled={!selectedRepo || !selectedCommit || reposLoading || commitsLoading}
               onClick={() => setStep('interview')}
             >
-              ì¸í„°ë·° ì‹œì‘
+              ÀÎÅÍºä ½ÃÀÛ
             </button>
           </section>
         ) : (
           <section className="mt-8 rounded-xl border p-6">
-            <h2 className="text-xl font-semibold">2. AI íŠœí„° ì¸í„°ë·° ë£¸</h2>
+            <h2 className="text-xl font-semibold">2. AI Æ©ÅÍ ÀÎÅÍºä ·ë</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              {selectedRepo} / {selectedCommit}
+              {selectedRepo} / {selectedCommit.slice(0, 7)}
             </p>
 
             <div className="mt-4 rounded-md bg-muted p-4">
-              <p className="font-medium">Q. ì™œ ì´ ì»¤ë°‹ì—ì„œ ì´ êµ¬í˜„ ë°©ì‹ì„ ì„ íƒí–ˆë‚˜ìš”?</p>
+              <p className="font-medium">Q. ¿Ö ÀÌ Ä¿¹Ô¿¡¼­ ÀÌ ±¸Çö ¹æ½ÄÀ» ¼±ÅÃÇß³ª¿ä?</p>
             </div>
 
             <textarea
               className="mt-4 h-36 w-full rounded-md border bg-white px-3 py-2"
-              placeholder="ë‹µë³€ì„ ì…ë ¥í•˜ì„¸ìš”"
+              placeholder="´äº¯À» ÀÔ·ÂÇÏ¼¼¿ä"
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
             />
 
             <div className="mt-4 grid gap-2 md:grid-cols-4">
-              <button className="rounded-md border px-3 py-2">ë‹µë³€ ì œì¶œ</button>
-              <button className="rounded-md border px-3 py-2">íŒíŠ¸ ë³´ê¸°</button>
-              <button className="rounded-md border px-3 py-2">ëª¨ë¥´ê² ì–´ìš”(í•´ì„¤)</button>
-              <button className="rounded-md border px-3 py-2">ì§ˆë¬¸ ìŠ¤í‚µ</button>
+              <button className="rounded-md border px-3 py-2">´äº¯ Á¦Ãâ</button>
+              <button className="rounded-md border px-3 py-2">ÈùÆ® º¸±â</button>
+              <button className="rounded-md border px-3 py-2">¸ğ¸£°Ú¾î¿ä(ÇØ¼³)</button>
+              <button className="rounded-md border px-3 py-2">Áú¹® ½ºÅµ</button>
             </div>
 
             <button className="mt-4 text-sm underline" onClick={() => setStep('select')}>
-              ì»¤ë°‹ ì„ íƒìœ¼ë¡œ ëŒì•„ê°€ê¸°
+              Ä¿¹Ô ¼±ÅÃÀ¸·Î µ¹¾Æ°¡±â
             </button>
           </section>
         )}
