@@ -72,3 +72,31 @@ postsRouter.get('/', async (_req, res) => {
     return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error instanceof Error ? error.message : 'Unexpected error' } });
   }
 });
+
+postsRouter.get('/:postId', async (req, res) => {
+  try {
+    const { postId } = req.params;
+    if (!Types.ObjectId.isValid(postId)) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_POST_ID', message: 'Invalid postId.' } });
+    }
+    const user = await getOrCreateDefaultUser();
+    const post = await PostModel.findOne({ _id: postId, userId: user._id });
+    if (!post) {
+      return res.status(404).json({ success: false, error: { code: 'POST_NOT_FOUND', message: 'Post not found.' } });
+    }
+    return res.json({
+      success: true,
+      data: {
+        id: String(post._id),
+        title: post.title,
+        repoFullName: post.repoFullName,
+        commitSha: post.commitSha,
+        status: post.status,
+        updatedAt: post.updatedAt,
+        contentMarkdown: post.contentMarkdown,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error instanceof Error ? error.message : 'Unexpected error' } });
+  }
+});
