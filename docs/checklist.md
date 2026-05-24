@@ -64,11 +64,11 @@
 - [x] 저장 포스트 카드 목록 및 재편집 플로우를 구현한다.
 
 ### 품질/안정성
-- [ ] 외부 API 호출이 서버에서만 수행되는지 점검한다.
+- [x] 외부 API 호출이 서버에서만 수행되는지 점검한다.
 - [ ] 입력/출력 스키마 검증(Zod)을 적용한다.
-- [ ] LLM 실패/타임아웃/과대 diff 방어 로직을 반영한다.
-- [ ] 민감정보가 로그/응답에 노출되지 않도록 점검한다.
-- [ ] MongoDB 인덱스(`interviewSessions userId+createdAt`, `posts userId+updatedAt`, `interviewTurns sessionId+turnIndex`)를 적용한다.
+- [x] LLM 실패/타임아웃/과대 diff 방어 로직을 반영한다.
+- [x] 민감정보가 로그/응답에 노출되지 않도록 점검한다.
+- [x] MongoDB 인덱스(`interviewSessions userId+createdAt`, `posts userId+updatedAt`, `interviewTurns sessionId+turnIndex`)를 적용한다.
 
 ### 테스트/최종 정리
 - [ ] 핵심 3개 사용자 플로우 E2E 점검을 수행한다.

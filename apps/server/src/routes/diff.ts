@@ -37,13 +37,17 @@ diffRouter.get('/', async (req, res) => {
   }
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
     const response = await fetch(`${GITHUB_API_BASE}/repos/${repo}/commits/${sha}`, {
+      signal: controller.signal,
       headers: {
         Accept: 'application/vnd.github+json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         'X-GitHub-Api-Version': '2022-11-28'
       }
     });
+    clearTimeout(timeout);
 
     if (!response.ok) {
       return res.status(response.status).json({
@@ -56,7 +60,7 @@ diffRouter.get('/', async (req, res) => {
     }
 
     const detail = (await response.json()) as GithubCommitDetail;
-    const files = detail.files ?? [];
+    const files = (detail.files ?? []).slice(0, 80);
 
     return res.json({
       success: true,
@@ -70,7 +74,7 @@ diffRouter.get('/', async (req, res) => {
           additions: file.additions,
           deletions: file.deletions,
           changes: file.changes,
-          patch: file.patch ?? ''
+          patch: (file.patch ?? '').slice(0, 8000)
         }))
       }
     });
