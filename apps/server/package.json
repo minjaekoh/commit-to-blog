@@ -1,9 +1,9 @@
-﻿{
+{
   "name": "@commit-to-blog/server",
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "set DOTENV_CONFIG_PATH=../../.env&& tsx watch src/index.ts",
     "build": "echo server build pending",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src --ext .ts"
@@ -17,3 +17,4 @@
     "tsx": "^4.19.1"
   }
 }
+

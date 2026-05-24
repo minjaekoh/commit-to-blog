@@ -1,4 +1,4 @@
-import React from 'react';
+癤퓁mport React from 'react';
 import ReactDOM from 'react-dom/client';
 
 import './styles/globals.css';
@@ -70,7 +70,7 @@ function App() {
         setRepos(data);
         setSelectedRepo(data[0]?.fullName ?? '');
       } catch (error) {
-        setReposError(error instanceof Error ? error.message : '저장소 조회 실패');
+        setReposError(error instanceof Error ? error.message : 'Failed to load repositories');
       } finally {
         setReposLoading(false);
       }
@@ -94,7 +94,7 @@ function App() {
         setCommits(data);
         setSelectedCommit(data[0]?.sha ?? '');
       } catch (error) {
-        setCommitsError(error instanceof Error ? error.message : '커밋 조회 실패');
+        setCommitsError(error instanceof Error ? error.message : 'Failed to load commits');
       } finally {
         setCommitsLoading(false);
       }
@@ -118,7 +118,7 @@ function App() {
         );
         setDiffFiles(data.files);
       } catch (error) {
-        setDiffError(error instanceof Error ? error.message : 'Diff 조회 실패');
+        setDiffError(error instanceof Error ? error.message : 'Failed to load diff');
       } finally {
         setDiffLoading(false);
       }
@@ -131,11 +131,11 @@ function App() {
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-5xl p-8">
         <h1 className="text-3xl font-bold">Smart Blog - AI Tutor</h1>
-        <p className="mt-2 text-muted-foreground">Commit 선택 - AI 인터뷰 진입</p>
+        <p className="mt-2 text-muted-foreground">Commit selection and interview entry</p>
 
         {step === 'select' ? (
           <section className="mt-8 rounded-xl border p-6">
-            <h2 className="text-xl font-semibold">1. 저장소/커밋 선택</h2>
+            <h2 className="text-xl font-semibold">1. Select Repository and Commit</h2>
 
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <label className="block">
@@ -171,24 +171,24 @@ function App() {
               </label>
             </div>
 
-            {reposLoading ? <p className="mt-3 text-sm">저장소 로딩 중...</p> : null}
-            {reposError ? <p className="mt-3 text-sm text-red-600">저장소 오류: {reposError}</p> : null}
-            {!reposLoading && !reposError && repos.length === 0 ? <p className="mt-3 text-sm">저장소가 없습니다.</p> : null}
+            {reposLoading ? <p className="mt-3 text-sm">Loading repositories...</p> : null}
+            {reposError ? <p className="mt-3 text-sm text-red-600">Repository error: {reposError}</p> : null}
+            {!reposLoading && !reposError && repos.length === 0 ? <p className="mt-3 text-sm">No repositories found.</p> : null}
 
-            {commitsLoading ? <p className="mt-3 text-sm">커밋 로딩 중...</p> : null}
-            {commitsError ? <p className="mt-3 text-sm text-red-600">커밋 오류: {commitsError}</p> : null}
+            {commitsLoading ? <p className="mt-3 text-sm">Loading commits...</p> : null}
+            {commitsError ? <p className="mt-3 text-sm text-red-600">Commit error: {commitsError}</p> : null}
             {!commitsLoading && !commitsError && selectedRepo && commits.length === 0 ? (
-              <p className="mt-3 text-sm">선택한 저장소에 커밋이 없습니다.</p>
+              <p className="mt-3 text-sm">No commits found in this repository.</p>
             ) : null}
 
-            {diffLoading ? <p className="mt-3 text-sm">Diff 로딩 중...</p> : null}
-            {diffError ? <p className="mt-3 text-sm text-red-600">Diff 오류: {diffError}</p> : null}
+            {diffLoading ? <p className="mt-3 text-sm">Loading diff...</p> : null}
+            {diffError ? <p className="mt-3 text-sm text-red-600">Diff error: {diffError}</p> : null}
             {!diffLoading && !diffError && selectedCommit && diffFiles.length === 0 ? (
-              <p className="mt-3 text-sm">Diff 파일이 없습니다.</p>
+              <p className="mt-3 text-sm">No changed files in this commit.</p>
             ) : null}
 
             {!diffLoading && diffFiles.length > 0 ? (
-              <p className="mt-3 text-sm text-muted-foreground">변경 파일 {diffFiles.length}개</p>
+              <p className="mt-3 text-sm text-muted-foreground">Changed files: {diffFiles.length}</p>
             ) : null}
 
             <button
@@ -196,36 +196,36 @@ function App() {
               disabled={!selectedRepo || !selectedCommit || reposLoading || commitsLoading}
               onClick={() => setStep('interview')}
             >
-              인터뷰 시작
+              Start Interview
             </button>
           </section>
         ) : (
           <section className="mt-8 rounded-xl border p-6">
-            <h2 className="text-xl font-semibold">2. AI 튜터 인터뷰 룸</h2>
+            <h2 className="text-xl font-semibold">2. AI Tutor Interview Room</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               {selectedRepo} / {selectedCommit.slice(0, 7)}
             </p>
 
             <div className="mt-4 rounded-md bg-muted p-4">
-              <p className="font-medium">Q. 왜 이 커밋에서 이 구현 방식을 선택했나요?</p>
+              <p className="font-medium">Q. Why did you choose this implementation approach in this commit?</p>
             </div>
 
             <textarea
               className="mt-4 h-36 w-full rounded-md border bg-white px-3 py-2"
-              placeholder="답변을 입력하세요"
+              placeholder="Write your answer"
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
             />
 
             <div className="mt-4 grid gap-2 md:grid-cols-4">
-              <button className="rounded-md border px-3 py-2">답변 제출</button>
-              <button className="rounded-md border px-3 py-2">힌트 보기</button>
-              <button className="rounded-md border px-3 py-2">모르겠어요(해설)</button>
-              <button className="rounded-md border px-3 py-2">질문 스킵</button>
+              <button className="rounded-md border px-3 py-2">Submit Answer</button>
+              <button className="rounded-md border px-3 py-2">Show Hint</button>
+              <button className="rounded-md border px-3 py-2">I Don&apos;t Know</button>
+              <button className="rounded-md border px-3 py-2">Skip Question</button>
             </div>
 
             <button className="mt-4 text-sm underline" onClick={() => setStep('select')}>
-              커밋 선택으로 돌아가기
+              Back to Commit Selection
             </button>
           </section>
         )}
