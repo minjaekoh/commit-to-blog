@@ -3,6 +3,7 @@ import { Types } from 'mongoose';
 import { z } from 'zod';
 
 import { InterviewSessionModel, InterviewTurnModel, UserModel } from '../models';
+const GITHUB_API_BASE = 'https://api.github.com';
 
 const startBodySchema = z.object({
   repo: z.string().min(1),
@@ -34,13 +35,29 @@ interviewRouter.post('/start', async (req, res) => {
     }
 
     const { repo, sha } = parsed.data;
+    const token = process.env.GITHUB_TOKEN;
     const user = await getOrCreateDefaultUser();
     const shortSha = sha.slice(0, 7);
+    const commitResponse = await fetch(`${GITHUB_API_BASE}/repos/${repo}/commits/${sha}`, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    });
+    if (!commitResponse.ok) {
+      return res.status(502).json({ success: false, error: { code: 'GITHUB_API_ERROR', message: `Failed to analyze commit: ${commitResponse.status}` } });
+    }
+    const commitDetail = (await commitResponse.json()) as { files?: Array<{ filename: string; status: string; additions: number; deletions: number; patch?: string }> };
+    const files = (commitDetail.files ?? []).slice(0, 3);
+    const fileNames = files.map((f) => f.filename).join(', ');
+    const topFile = files[0];
+    const patchHint = topFile?.patch ? topFile.patch.split('\n').slice(0, 4).join(' / ') : 'patch unavailable';
 
-    const question = `Commit ${shortSha}에서 핵심 변경을 선택한 이유를 설명해보세요.`;
-    const expectedAnswer = '문제 맥락, 대안 비교, 트레이드오프, 테스트 관점을 포함한 설명';
-    const hint = '변경 전 문제점 -> 선택한 접근 -> 왜 다른 방법보다 나았는지 순서로 답변해보세요.';
-    const conceptTags = ['trade-off', 'design-intent', 'testing'];
+    const question = `Commit ${shortSha}에서 [${fileNames || '변경 파일 없음'}] 변경을 선택한 이유와 대안 대비 장단점을 설명해보세요.`;
+    const expectedAnswer = `핵심 파일(${topFile?.filename ?? 'n/a'}) 기준으로 문제 맥락, 선택 이유, 대안 비교, 테스트 검증을 포함한 설명`;
+    const hint = `가장 큰 변경 파일: ${topFile?.filename ?? 'n/a'} (${topFile?.status ?? 'n/a'}, +${topFile?.additions ?? 0}/-${topFile?.deletions ?? 0}). 패치 단서: ${patchHint}`;
+    const conceptTags = ['diff-analysis', 'trade-off', 'design-intent'];
 
     const session = await InterviewSessionModel.create({
       userId: user._id,
