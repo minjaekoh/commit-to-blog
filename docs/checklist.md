@@ -71,10 +71,10 @@
 - [x] MongoDB 인덱스(`interviewSessions userId+createdAt`, `posts userId+updatedAt`, `interviewTurns sessionId+turnIndex`)를 적용한다.
 
 ### 테스트/최종 정리
-- [ ] 핵심 3개 사용자 플로우 E2E 점검을 수행한다.
-- [ ] 예외 케이스(커밋 없음, 빈 diff, LLM 오류, 스킵) 테스트를 수행한다.
-- [ ] 데모 시나리오(실사용 레포 1개 + 백업 샘플 1개)를 준비한다.
-- [ ] 최종 README(실행법/환경변수/기능설명)를 업데이트한다.
+- [x] 핵심 3개 사용자 플로우 E2E 점검을 수행한다.
+- [x] 예외 케이스(커밋 없음, 빈 diff, LLM 오류, 스킵) 테스트를 수행한다.
+- [x] 데모 시나리오(실사용 레포 1개 + 백업 샘플 1개)를 준비한다.
+- [x] 최종 README(실행법/환경변수/기능설명)를 업데이트한다.
 
 
 
