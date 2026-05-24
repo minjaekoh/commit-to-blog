@@ -1,7 +1,18 @@
 ﻿import { Router } from 'express';
 import { Types } from 'mongoose';
+import { z } from 'zod';
 
 import { PostModel, UserModel } from '../models';
+
+const postCreateSchema = z.object({
+  sessionId: z.string().optional(),
+  repoFullName: z.string().min(1),
+  commitSha: z.string().min(7),
+  title: z.string().min(1).max(200),
+  contentMarkdown: z.string().min(1),
+  status: z.enum(['draft', 'published']).optional(),
+  tags: z.array(z.string()).optional(),
+});
 
 const DEFAULT_USER = { githubUserId: 'local-dev-user', username: 'local-dev-user' };
 
@@ -15,20 +26,12 @@ async function getOrCreateDefaultUser() {
 
 postsRouter.post('/', async (req, res) => {
   try {
-    const { sessionId, repoFullName, commitSha, title, contentMarkdown, status, tags } = req.body as {
-      sessionId?: string;
-      repoFullName?: string;
-      commitSha?: string;
-      title?: string;
-      contentMarkdown?: string;
-      status?: 'draft' | 'published';
-      tags?: string[];
-    };
-
-    if (!repoFullName || !commitSha || !title || !contentMarkdown) {
-      return res.status(400).json({ success: false, error: { code: 'INVALID_INPUT', message: 'repoFullName, commitSha, title, contentMarkdown are required.' } });
+    const parsed = postCreateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_INPUT', message: parsed.error.issues[0]?.message ?? 'Invalid input' } });
     }
 
+    const { sessionId, repoFullName, commitSha, title, contentMarkdown, status, tags } = parsed.data;
     const user = await getOrCreateDefaultUser();
 
     const post = await PostModel.create({

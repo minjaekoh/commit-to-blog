@@ -65,7 +65,7 @@
 
 ### 품질/안정성
 - [x] 외부 API 호출이 서버에서만 수행되는지 점검한다.
-- [ ] 입력/출력 스키마 검증(Zod)을 적용한다.
+- [x] 입력/출력 스키마 검증(Zod)을 적용한다.
 - [x] LLM 실패/타임아웃/과대 diff 방어 로직을 반영한다.
 - [x] 민감정보가 로그/응답에 노출되지 않도록 점검한다.
 - [x] MongoDB 인덱스(`interviewSessions userId+createdAt`, `posts userId+updatedAt`, `interviewTurns sessionId+turnIndex`)를 적용한다.
